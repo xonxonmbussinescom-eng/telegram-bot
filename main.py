@@ -421,10 +421,14 @@ async def voice_message(message: Message):
     mode = user_modes.get(message.from_user.id)
     
     if mode not in [
+        "conversation_🟢 Conversación A1",
+        "conversation_🔵 Conversación A2",
+        "conversation_🟡 Conversación B1",
+        "conversation_🟠 Conversación B2",
         "voice",
         "ielts_speaking_voice",
         "cefr_speaking_voice",
-        "teacher",
+        "spanish_teacher",
         "conversation",
         "shadowing",
         "spanish_pronunciation",
@@ -756,13 +760,13 @@ Use CEFR format.
         """
             )
 
-        await message.answer(
-            f"📝 Transcripción:\n\n{user_text}"
-        )
+            await message.answer(
+                f"📝 Transcripción:\n\n{user_text}"
+            )
 
-        await message.answer(
-            response.output_text[:3000]
-        )
+            await message.answer(
+                response.output_text[:3000]
+            )
 
         return
 
@@ -1361,6 +1365,8 @@ async def chat(message: Message):
                 [KeyboardButton(text="📖 Lectura")],
                 [KeyboardButton(text="🎤 Conversación")],
                 [KeyboardButton(text="🤖 Profesor IA")],
+                [KeyboardButton(text="🗣 Pronunciación")],
+                [KeyboardButton(text="📖 Mi Libro de Vocabulario")],
                 [KeyboardButton(text="⭐ Premium Español")],
                 [KeyboardButton(text="🌐 Idiomas")]
             ],
@@ -1388,8 +1394,9 @@ async def chat(message: Message):
                 [KeyboardButton(text="B1 Palabras")],
                 [KeyboardButton(text="B2 Palabras")],
                 [KeyboardButton(text="🔍 Traductor")],
+                [KeyboardButton(text="➕ Guardar Palabra")],
                 [KeyboardButton(text="⬅️ Volver")]
-            ],  
+            ],
             resize_keyboard=True
         )
 
@@ -1402,6 +1409,30 @@ async def chat(message: Message):
 
     if text == "⬅️ Volver":
 
+        previous = user_previous_menu.get(
+            message.from_user.id
+        )
+
+        if previous == "premium_functions":
+
+            keyboard = ReplyKeyboardMarkup(
+                keyboard=[
+                    [KeyboardButton(text="🚀 Funciones Premium")],
+                    [KeyboardButton(text="💳 Comprar Premium")],
+                    [KeyboardButton(text="⭐ Verificar Estado")],
+                    [KeyboardButton(text="📞 Contactar Admin")],
+                    [KeyboardButton(text="⬅️ Volver")]
+                ],
+                resize_keyboard=True
+            )
+
+            await message.answer(
+                "⭐ Premium Español",
+                reply_markup=keyboard
+            )
+
+            return
+    
         user_modes.pop(
             message.from_user.id,
             None
@@ -1533,7 +1564,7 @@ async def chat(message: Message):
             client.responses.create,
             model="gpt-5-mini",
             input=f"""
-    Generate 20 Spanish A1 vocabulary words.
+    Generate 20 Spanish A2 vocabulary words.
 
     For each word provide:
 
@@ -1586,7 +1617,7 @@ async def chat(message: Message):
             client.responses.create,
             model="gpt-5-mini",
             input=f"""
-    Generate 20 Spanish A1 vocabulary words.
+    Generate 20 Spanish B1 vocabulary words.
 
     For each word provide:
 
@@ -1639,7 +1670,7 @@ async def chat(message: Message):
             client.responses.create,
             model="gpt-5-mini",
             input=f"""
-    Generate 20 Spanish A1 vocabulary words.
+    Generate 20 Spanish B2 vocabulary words.
 
     For each word provide:
 
@@ -2526,6 +2557,43 @@ async def chat(message: Message):
 
         return
 
+    if text == "💳 Comprar Premium":
+
+        user_modes[message.from_user.id] = "waiting_payment"
+
+        await message.answer(
+            "💳 Premium Español\n\n"
+            "👤 Nombre: ELVORA\n"
+            "💳 Tarjeta: 8600 XXXX XXXX XXXX\n\n"
+            "📸 Después del pago envía aquí la captura de pantalla."
+        )
+
+        return
+
+    if text == "⭐ Verificar Estado":
+
+        if is_spanish_premium(message.from_user.id):
+
+            await message.answer(
+                "✅ Premium Español activo."
+            )
+
+        else:
+
+            await message.answer(
+                "❌ No tienes Premium Español."
+            )
+
+        return
+
+    if text == "📞 Contactar Admin":
+
+        await message.answer(
+            "👨‍💻 Admin:\n@USERNAME"
+        )
+
+        return
+    
     if text == "🚀 Funciones Premium":
 
         keyboard = ReplyKeyboardMarkup(
@@ -2540,6 +2608,10 @@ async def chat(message: Message):
             resize_keyboard=True
         )
 
+        user_previous_menu[
+            message.from_user.id
+        ] = "premium_functions"
+        
         await message.answer(
             "⭐ Funciones Premium",
             reply_markup=keyboard
@@ -2890,7 +2962,30 @@ async def chat(message: Message):
 
         return
 
+    if mode == "spanish_teacher":
 
+        response = await asyncio.to_thread(
+            client.responses.create,
+            model="gpt-5-mini",
+            input=f"""
+    Eres profesor de español.
+
+    Alumno:
+
+    {text}
+
+    Corrige errores.
+    Explica gramática.
+    Responde en español.
+    """
+        )
+
+        await message.answer(
+            response.output_text[:4000]
+        )
+
+        return
+    
     course = user_course.get(
         message.from_user.id
     )
@@ -4190,8 +4285,14 @@ Requirements:
         return
     
     if text == "💳 Comprar Premium":
-
+       
         user_modes[message.from_user.id] = "waiting_payment"
+
+        await message.answer(
+            "📸 Después del pago envía aquí la captura de pantalla."
+        )
+
+        return
 
         await message.answer(
             "⭐ PREMIUM ESPAÑOL ⭐\n\n"
@@ -4214,7 +4315,7 @@ Requirements:
         )
 
         return
-
+        
     if text == "📞 Contactar Admin":
 
         await message.answer(
@@ -5037,6 +5138,30 @@ Requirements:
         conn.commit()
 
         await message.answer(response.output_text[:4000])
+
+        return
+
+    if mode == "spanish_teacher":
+
+        response = await asyncio.to_thread(
+            client.responses.create,
+            model="gpt-5-mini",
+            input=f"""
+    Eres un profesor de español.
+
+    Estudiante:
+
+    {user_text}
+
+    Corrige errores.
+    Explica la gramática.
+    Responde en español.
+    """
+        )
+
+        await message.answer(
+            response.output_text[:4000]
+        )
 
         return
     
