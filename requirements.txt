@@ -1,5 +1,0 @@
-aiogram
-openai
-python-dotenv
-gTTS
-reportlab
